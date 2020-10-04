@@ -1,0 +1,58 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const MongoClient = require("mongodb").MongoClient;
+const ObjectId = require("mongodb").ObjectId;
+require("dotenv").config();
+
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+const port = 4000;
+const url = process.env.DB_URL;
+const dbname = "volunteerNetwork";
+
+MongoClient.connect(url, (err, client) => {
+    console.log("connected db");
+    const db = client.db(dbname);
+    const registrations = db.collection("registrations");
+    const events = db.collection("events");
+    app.post("/register", (req, res) => {
+        const newRegistration = req.body;
+        registrations.insertOne(newRegistration).then((result) => {
+            res.send(result.insertedCount > 0);
+        });
+        console.log(newRegistration);
+    });
+    app.post("/addevent", (req, res) => {
+        const newRegistration = req.body;
+        events.insertOne(newRegistration).then((result) => {
+            res.send(result.insertedCount > 0);
+        });
+        console.log(newRegistration);
+    });
+    // query via email
+    app.get("/myEvents", (req, res) => {
+        registrations
+            .find({ email: req.query.email })
+            .toArray((err, documents) => {
+                res.send(documents);
+            });
+    });
+    app.get("/registrations", (req, res) => {
+        registrations.find({}).toArray((err, documents) => {
+            res.send(documents);
+        });
+    });
+    app.get("/events", (req, res) => {
+        events.find({}).toArray((err, documents) => {
+            res.send(documents);
+        });
+    });
+});
+app.get("/", (req, res) => {
+    res.send("Hello world!");
+});
+app.listen(port, () => {
+    console.log("Example app listening to localhost:5000");
+});
