@@ -5,18 +5,27 @@ const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectId;
 require("dotenv").config();
 
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.swu9d.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 const app = express();
+
 app.use(bodyParser.json());
 app.use(cors());
 const port = 4000;
-const url = process.env.DB_URL;
 const dbname = "volunteerNetwork";
 
-MongoClient.connect(url, (err, client) => {
+app.get("/", (req, res) => {
+    res.send("Hello world!");
+});
+const client = new MongoClient(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+
+client.connect((err) => {
     console.log("connected db");
-    const db = client.db(dbname);
-    const registrations = db.collection("registrations");
-    const events = db.collection("events");
+    const registrations = client.db(dbname).collection("registrations");
+    const events = client.db(dbname).collection("events");
+    // post Requests
     app.post("/register", (req, res) => {
         const newRegistration = req.body;
         registrations.insertOne(newRegistration).then((result) => {
@@ -31,7 +40,7 @@ MongoClient.connect(url, (err, client) => {
         });
         console.log(newRegistration);
     });
-    // query via email
+    // get requests
     app.get("/myEvents", (req, res) => {
         registrations
             .find({ email: req.query.email })
@@ -39,20 +48,29 @@ MongoClient.connect(url, (err, client) => {
                 res.send(documents);
             });
     });
-    app.get("/registrations", (req, res) => {
-        registrations.find({}).toArray((err, documents) => {
-            res.send(documents);
-        });
-    });
     app.get("/events", (req, res) => {
         events.find({}).toArray((err, documents) => {
             res.send(documents);
         });
     });
+    app.get("/registrations", (req, res) => {
+        registrations.find({}).toArray((err, documents) => {
+            res.send(documents);
+        });
+    });
+
+    // delete requests
+    app.delete("/delete/:id", (req, res) => {
+        console.log(req.params.id);
+        registrations
+            .deleteOne({ _id: ObjectId(req.params.id) })
+            .then((err, result) => {
+                console.log(result);
+            })
+            .then(() => res.send(req.params.id));
+    });
 });
-app.get("/", (req, res) => {
-    res.send("Hello world!");
-});
+
 app.listen(port, () => {
     console.log("Example app listening to localhost:5000");
 });
