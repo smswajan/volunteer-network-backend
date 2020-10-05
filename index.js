@@ -10,7 +10,7 @@ const app = express();
 
 app.use(bodyParser.json());
 app.use(cors());
-const port = 4000;
+const port = process.env.PORT || 4200;
 const dbname = "volunteerNetwork";
 
 app.get("/", (req, res) => {
